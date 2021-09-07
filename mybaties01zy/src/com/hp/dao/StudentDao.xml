@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.hp.dao.StudentDao">
+    <resultMap id="studentMap" type="com.hp.entity.Student">
+        <id column="s_id" property="s_id"/>
+        <result column="s_name" property="s_name"/>
+        <result column="s_birth" property="s_birth"/>
+        <result column="s_sex" property="s_sex"/>
+        <association property="score" javaType="com.hp.entity.Score">
+            <id column="s_id" property="s_id"/>
+            <id column="c_id" property="c_id"/>
+            <result column="s_score" property="s_score"/>
+        </association>
+
+    </resultMap>
+    <!--1、查询"01"课程比"02"课程成绩高的学生的信息及课程分数-->
+    <select id="selectByScore" resultType="map" parameterType="map">
+       select s1.*,s2.s_score score1,s3.s_score score2 from student s1,Score s2,Score s3
+        where s1.s_id=s2.s_id and s1.s_id=s3.s_id and s2.c_id = #{c_id1} and s3.c_id = #{c_id2} and s2.s_score > s3.s_score
+    </select>
+
+    <!--2、查询"01"课程比"02"课程成绩低的学生的信息及课程分数-->
+    <select id="selectByScore02" resultType="map" parameterType="map">
+        <![CDATA[  select s1.*,s2.s_score score1,s3.s_score score2 from student s1,Score s2,Score s3
+        where s1.s_id=s2.s_id and s1.s_id=s3.s_id and s2.c_id = #{c_id01} and s3.c_id = #{c_id02} and s2.s_score < s3.s_score ]]>
+    </select>
+    <!--3、查询平均成绩大于等于60分的同学的学生编号和学生姓名和平均成绩-->
+    <!--select s1.s_id,s1.s_name,avg(s2.s_score) as avgScore from Student s1,Score s2 where s1.s_id=s2.s_id group by s2.s_id HAVING avg(s2.s_score) >=60;-->
+    <select id="selectStudent" resultType="map" parameterType="int">
+        select s1.s_id,s1.s_name,avg(s2.s_score) avgScore from Student s1,Score s2
+        where s1.s_id=s2.s_id group by s2.s_id HAVING avg(s2.s_score) >= #{s_score}
+    </select>
+
+
+    <!--4、查询平均成绩小于60分的同学的学生编号和学生姓名和平均成绩____ (包括有成绩的和无成绩的)-->
+    <select id="selectStudent02" resultType="map" parameterType="int">
+        <![CDATA[ select s1.s_id,s1.s_name,avg(s2.s_score) avgScore from Student s1,Score s2
+        where s1.s_id=s2.s_id group by s2.s_id HAVING avg(s2.s_score) <= 60 ]]>
+    </select>
+
+    <!--5、查询所有同学的学生编号、学生姓名、选课总数、所有课程的总成绩-->
+    <select id="selectCount" resultType="map">
+        select student.s_id,student.s_name,count(score.c_id) as '选课总数',sum(score.s_score) as '总成绩' from Student,Score
+         where student.s_id=score.s_id GROUP BY score.s_id
+    </select>
+
+    <!--6、查询"李"姓老师的数量 -->
+    <select id="selectByLikeName" resultType="int" parameterType="string">
+        select count(*) as '数量' from Teacher where t_name like #{t_name}"%"
+    </select>
+
+    <!-- 7、查询学过"张三"老师授课的同学的信息 -->
+    <select id="selectTByStudent" resultType="map" parameterType="string">
+        select s1.* from Student s1,Score s2,Course c,Teacher t
+        where s1.s_id=s2.s_id and c.c_id=s2.c_id and t.t_id=c.t_id and t.t_name = #{t_name}
+    </select>
+
+    <!-- 8、查询没学过"张三"老师授课的同学的信息 -->
+    <select id="selectTByStudent02" resultType="map" parameterType="string">
+        select s1.* from Student s1,Teacher t,Score s2
+        where s1.s_id=s2.s_id and t.t_id=s2.c_id and s1.s_name
+        not in(select Student.s_name from Student,Teacher,Score  where Student.s_id=Score.s_id and Teacher.t_id=Score.c_id and Teacher.t_name = #{t_name});
+
+    </select>
+
+    <!--9、查询学过编号为"01"并且也学过编号为"02"的课程的同学的信息-->
+    <select id="studentcid" resultType="map" parameterType="map">
+        select s_id,s_name from student where s_id in(select sc.s_id from (select * from score
+        where c_id = #{c_id1}) as sc join (select * from score where c_id = #{c_id2}) as sc2 on sc.s_id=sc2.s_id)
+    </select>
+
+    <!--10、查询学过编号为"01"但是没有学过编号为"02"的课程的同学的信息-->
+    <select id="studentcidNo" resultType="map" parameterType="map">
+        select s1.* from student s1 join score sc on s1.s_id =sc.s_id and sc.c_id = #{c_id01}
+        where s1.s_id not in(select s1.s_id from student s1 join score sc on s1.s_id = sc.s_id and sc.c_id = #{c_id02})
+    </select>
+</mapper>
