@@ -1,2 +1,2 @@
-# mybaties02
+# mybatis02
 mybaties项目多种查询方式和添加及巩固练习多表联查
